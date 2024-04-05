@@ -1,0 +1,33 @@
+//@version=5
+strategy("Ardışık İşlemler Stratejisi", overlay=true)
+plength = input(20, title="Pivot Uzunluğu")
+hh = ta.highest(high, plength)
+ll = ta.lowest(low, plength)
+slength = input.int(14, minval=1, title="Stochastic Uzunluğu")
+OverBought = input(80, title="Aşırı Alım")
+OverSold = input(20, title="Aşırı Satım")
+smoothK = 3
+smoothD = 3
+k = ta.sma(ta.stoch(close, high, low, slength), smoothK)
+d = ta.sma(k, smoothD)
+co = ta.crossover(k, d)
+cu = ta.crossunder(k, d)
+rlength = input.int(9, minval=1, title="ROC Uzunluğu")
+source = input(close, title="Kaynak")
+roc = 100 * (source - source[rlength]) / source[rlength]
+
+// Giriş koşulları
+entry_long = co and k < OverSold and roc < 0 and close > ll and barstate.isconfirmed
+entry_short = cu and k > OverBought and roc > 0 and close < hh and barstate.isconfirmed
+
+// Long girişi
+if (entry_long)
+    if (strategy.position_size <= 0) // Eğer mevcut pozisyon short ise veya pozisyon yoksa
+        strategy.close("short", comment="EXIT-SHORT") // Mevcut short pozisyonunu kapat
+        strategy.entry("long", strategy.long, comment="ENTER-LONG") // Long pozisyonu aç
+
+// Short girişi
+if (entry_short)
+    if (strategy.position_size >= 0) // Eğer mevcut pozisyon long ise veya pozisyon yoksa
+        strategy.close("long", comment="EXIT-LONG") // Mevcut long pozisyonunu kapat
+        strategy.entry("short", strategy.short, comment="ENTER-SHORT") // Short pozisyonu aç
